@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 import time
 from pathlib import Path
+import re
 
 from src.llm_client import OpenRouterLLMClient, build_default_llm_client
 from src.types import (
@@ -35,6 +36,24 @@ class SQLValidator:
 
         # TODO: Implement SQL validation logic
         # Consider what validation is needed for this use case
+        allowed_pattern = r"\s*(select|with)\b"
+        lowercase_sql = sql.lower()
+        if not re.match(allowed_pattern, lowercase_sql):
+            return SQLValidationOutput(
+                is_valid=False,
+                validated_sql=None,
+                error="Only SELECT/WITH allowed",
+                timing_ms=(time.perf_counter() - start) * 1000,
+            )
+
+        destructive_pattern = r"\b(drop|delete|update|insert|attach|pragma|truncate|replace|create|vacuum)\b"
+        if re.search(destructive_pattern, lowercase_sql):
+            return SQLValidationOutput(
+                is_valid=False,
+                validated_sql=None,
+                error="Query has destructive behavior",
+                timing_ms=(time.perf_counter() - start) * 1000,
+            )
 
         return SQLValidationOutput(
             is_valid=True,
