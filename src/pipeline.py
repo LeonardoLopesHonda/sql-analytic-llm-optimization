@@ -25,40 +25,40 @@ class SQLValidator:
     @classmethod
     def validate(cls, sql: str | None) -> SQLValidationOutput:
         start = time.perf_counter()
+        is_valid = True
+        validated_sql = sql
+        error = None
 
         if sql is None:
-            return SQLValidationOutput(
-                is_valid=False,
-                validated_sql=None,
-                error="No SQL provided",
-                timing_ms=(time.perf_counter() - start) * 1000,
-            )
+            is_valid = False
+            validated_sql = None
+            error = "No SQL provided"
 
         # TODO: Implement SQL validation logic
         # Consider what validation is needed for this use case
-        allowed_pattern = r"\s*(select|with)\b"
+        allowed_pattern = r"\s*(select)\b"
         lowercase_sql = sql.lower()
-        if not re.match(allowed_pattern, lowercase_sql):
-            return SQLValidationOutput(
-                is_valid=False,
-                validated_sql=None,
-                error="Only SELECT/WITH allowed",
-                timing_ms=(time.perf_counter() - start) * 1000,
-            )
 
-        destructive_pattern = r"\b(drop|delete|update|insert|attach|pragma|truncate|replace|create|vacuum)\b"
+        if lowercase_sql.count(";") > 1:
+            is_valid = False
+            validated_sql = None
+            error = "Multiple statements are not allowed"
+
+        if not re.match(allowed_pattern, lowercase_sql):
+            is_valid = False
+            validated_sql = None
+            error = "Only SELECT queries are allowed"
+
+        destructive_pattern = r"\b(drop|delete|update|insert|attach|pragma|truncate|replace|create|vacuum|alter|detach|load_extension)\b"
         if re.search(destructive_pattern, lowercase_sql):
-            return SQLValidationOutput(
-                is_valid=False,
-                validated_sql=None,
-                error="Query has destructive behavior",
-                timing_ms=(time.perf_counter() - start) * 1000,
-            )
+            is_valid=False
+            validated_sql=None
+            error="Dangerous SQL operation is not allowed"
 
         return SQLValidationOutput(
-            is_valid=True,
-            validated_sql=sql,
-            error=None,
+            is_valid=is_valid,
+            validated_sql=validated_sql,
+            error=error,
             timing_ms=(time.perf_counter() - start) * 1000,
         )
 
