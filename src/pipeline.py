@@ -36,10 +36,9 @@ class SQLValidator:
 
         # TODO: Implement SQL validation logic
         # Consider what validation is needed for this use case
-        allowed_pattern = r"\s*(select)\b"
-        lowercase_sql = sql.lower()
+        allowed_pattern = r"^\s*select\b"
 
-        if lowercase_sql.count(";") > 1:
+        if sql.count(";") > 1:
             return SQLValidationOutput(
                 is_valid = False,
                 validated_sql = None,
@@ -47,7 +46,7 @@ class SQLValidator:
                 timing_ms=(time.perf_counter() - start) * 1000,
             )
 
-        if not re.match(allowed_pattern, lowercase_sql):
+        if not re.match(allowed_pattern, sql, re.I):
             return SQLValidationOutput(
                 is_valid = False,
                 validated_sql = None,
@@ -55,8 +54,8 @@ class SQLValidator:
                 timing_ms=(time.perf_counter() - start) * 1000,
             )
 
-        destructive_pattern = r"\b(drop|delete|update|insert|attach|pragma|truncate|replace|create|vacuum|alter|detach|load_extension)\b"
-        if re.search(destructive_pattern, lowercase_sql):
+        destructive_pattern = re.compile(r"\b(drop|delete|update|insert|attach|pragma|truncate|replace|create|vacuum|alter|detach|load_extension)\b", re.I)
+        if destructive_pattern.search(sql):
             return SQLValidationOutput(
                 is_valid=False,
                 validated_sql=None,
