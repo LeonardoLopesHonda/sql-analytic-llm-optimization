@@ -23,6 +23,7 @@ class OpenRouterLLMClient:
         self.model = model or os.getenv("OPENROUTER_MODEL", DEFAULT_MODEL)
         self._client = OpenRouter(api_key=api_key)
         self._stats = {"llm_calls": 0, "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        self.reasoning_effort = "minimal"
 
     def _chat(self, messages: list[dict[str, str]], temperature: float, max_tokens: int) -> str:
         res = self._client.chat.send(
@@ -31,10 +32,12 @@ class OpenRouterLLMClient:
             temperature=temperature,
             max_tokens=max_tokens,
             stream=False,
+            reasoning={ "effort": self.reasoning_effort }
         )
 
         # TODO: Implement token counting here
         # Required for efficiency evaluation - see README.md for details.
+        # print(res.usage["total_tokens"])
 
         choices = getattr(res, "choices", None) or []
         if not choices:
